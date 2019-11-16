@@ -1,10 +1,13 @@
 // wired connections
-#define HG7881_A_IA 11 // D6 --> Motor A Input A --> MOTOR B +
-#define HG7881_A_IB 12 // D7 --> Motor A Input B --> MOTOR B -
+#define HG7881_A_IA 11 // D11 --> Motor A Input A --> MOTOR B +
+#define HG7881_A_IB 12 // D12 --> Motor A Input B --> MOTOR B -
 #define HG7881_B_IA 6 // D6 --> Motor B Input A --> MOTOR B +
 #define HG7881_B_IB 7 // D7 --> Motor B Input B --> MOTOR B -
 #define LEFT_LED 2
 #define RIGHT_LED 4
+#define LDR_1 0
+#define LDR_2 1
+#define LDR_3 2
  
 // functional connections
 #define MOTOR_A_PWM HG7881_A_IA // Motor A PWM Speed
@@ -17,12 +20,29 @@
 int motorSpeedA = 0;
 int motorSpeedB = 0;
 bool fwd = true;
+bool ledON = false;
 
 void setup() {
   pinMode(MOTOR_A_PWM, OUTPUT);
   pinMode(MOTOR_A_DIR, OUTPUT);
   pinMode(MOTOR_B_PWM, OUTPUT);
   pinMode(MOTOR_B_DIR, OUTPUT);
+
+  
+  // initialize timer1 
+
+  noInterrupts();           // disable all interrupts
+
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1  = 0;
+
+  OCR1A = 62500;            // compare match register 16MHz/256/1Hz
+  TCCR1B |= (1 << WGM12);   // CTC mode
+  TCCR1B |= (1 << CS12);    // 256 prescaler
+  TIMSK1 |= (1 << OCIE1A);  // enable timer compare interrupt
+
+  interrupts();             // enable all interrupts
   
   Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
 }
@@ -68,6 +88,13 @@ void loop() {
     if (!strcmp(msgType, "move")) {
       setMotorSpeed(values[0], values[1]);
     } else if (!strcmp(msgType, "lights")) {
+      // Light states are 0 (off), 1 (on), 2 (auto)
+      if (values[0] != 2) {
+        TIMSK1 &= (0 << OCIE1A);  // disable timer compare interrupt
+      } else {
+        TIMSK1 |= (1 << OCIE1A);  // enable timer compare interrupt
+      }
+      
       setLights(values[0]);
     }
   }
@@ -162,11 +189,32 @@ void setMotorSpeed(int xAxis, int yAxis) {
 void setLights(int state) {
   if (state) {
   Serial.println("setting lights to high");
-    digitalWrite(HEADLIGHT_1, HIGH);
-    digitalWrite(HEADLIGHT_2, HIGH);
+    digitalWrite(LEFT_LED, HIGH);
+    digitalWrite(RIGHT_LED, HIGH);
   } else {
   Serial.println("setting lights to low");
-    digitalWrite(HEADLIGHT_1, LOW);
-    digitalWrite(HEADLIGHT_2, LOW);
+    digitalWrite(LEFT_LED, LOW);
+    digitalWrite(RIGHT_LED, LOW);
+  }
+}
+
+
+ISR(TIMER1_COMPA_vect) // timer compare interrupt service routine
+{
+  int ldrReading = analogRead(LDR_1);
+  ldrReading += analogRead(LDR_2);
+  ldrReading += analogRead(LDR_3);
+  ldrReading = floor(ldrReading/3); // take average of the LDRs
+
+  if (ldrReading < 800) {
+    if (!ledON) {
+      setLights(1);
+      ledON = true;
+    }
+  } else {
+    if (ledON) {
+      setLights(0);
+      ledON = false;
+    }
   }
 }
