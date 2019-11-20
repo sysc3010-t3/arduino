@@ -14,11 +14,12 @@
 // Represents a connected motor.
 // Can set the direction and speed of the motor.
 class Motor {
-  int pwmPin;
-  int dirPin;
-  int dir; // dir can be 0 (backward) or 1 (forward)
-  int motorSpeed;
-  char id;
+  protected:
+    int pwmPin;
+    int dirPin;
+    int dir; // dir can be 0 (backward) or 1 (forward)
+    int motorSpeed;
+    char id;
 
   public:
     Motor(int pwmPinArg, int dirPinArg, char idArg);
@@ -31,6 +32,18 @@ class Motor {
 
     // Sets the speed of the motor
     void setMotorSpeed(int motorSpeedArg);
+
+  protected:
+    // Write the dir attribute to the DIR pin
+    virtual void writeDirection();
+
+    // Write the motorSpeed attribute to the PWM pin
+    virtual void writeMotorSpeed();
+};
+
+class StubMotor: public Motor {
+  public:
+    StubMotor(int pwmPinArg, int dirPinArg, char idArg);
 
   private:
     // Write the dir attribute to the DIR pin

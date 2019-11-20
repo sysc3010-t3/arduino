@@ -79,9 +79,7 @@ void Motor::setSpeedFromCoords(int xAxis, int yAxis) {
 void Motor::setDirection(int dirArg) {
   if (dirArg != dir) {
     dir = dirArg;
-    // Stops and sets the direction of the motor
-    digitalWrite(pwmPin, dir);
-    digitalWrite(dirPin, dir);
+    writeDirection();
   }
 }
 
@@ -89,7 +87,7 @@ void Motor::setDirection(int dirArg) {
 void Motor::setMotorSpeed(int motorSpeedArg) {
   if (motorSpeedArg != motorSpeed) {
     motorSpeed = motorSpeedArg;
-    analogWrite(pwmPin, motorSpeed);
+    writeMotorSpeed();
   }
 }
 
@@ -102,4 +100,24 @@ void Motor::writeDirection() {
 // Sets the motor speed
 void Motor::writeMotorSpeed() {
   analogWrite(pwmPin, motorSpeed);
+}
+
+StubMotor::StubMotor(int pwmPinArg, int dirPinArg, char idArg)
+  :Motor(pwmPinArg, dirPinArg, idArg) {
+}
+
+// Sets the direction of the motor
+void StubMotor::writeDirection() {
+  Serial.print("dir_");
+  Serial.print(id);
+  Serial.print("=");
+  Serial.println(dir);
+}
+
+// Sets the motor speed
+void StubMotor::writeMotorSpeed() {
+  Serial.print("speed_");
+  Serial.print(id);
+  Serial.print("=");
+  Serial.println(motorSpeed);
 }

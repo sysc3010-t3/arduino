@@ -27,9 +27,16 @@
 #define RC_OK 0
 #define RC_FAIL 1
 
+#define STD_MODE 0
+#define TEST_MODE 1
+
 // Define global variables
-Motor motorL = Motor(MOTOR_L_PWM, MOTOR_L_DIR, MOTOR_L);
-Motor motorR = Motor(MOTOR_R_PWM, MOTOR_R_DIR, MOTOR_R);
+StubMotor stubMotorL = StubMotor(MOTOR_L_PWM, MOTOR_L_DIR, MOTOR_L);
+StubMotor stubMotorR = StubMotor(MOTOR_R_PWM, MOTOR_R_DIR, MOTOR_R);
+Motor baseMotorL = Motor(MOTOR_L_PWM, MOTOR_L_DIR, MOTOR_L);
+Motor baseMotorR = Motor(MOTOR_R_PWM, MOTOR_R_DIR, MOTOR_R);
+Motor *motorL = &baseMotorL;
+Motor *motorR = &baseMotorR;
 LDR ldr = LDR(LDR_0, LDR_1, LDR_2);
 Headlights headlights = Headlights(LEFT_LED, RIGHT_LED);
 
@@ -84,8 +91,8 @@ void loop() {
         return;
       }
 
-      motorL.setSpeedFromCoords(values[0], values[1]);
-      motorR.setSpeedFromCoords(values[0], values[1]);
+      motorL->setSpeedFromCoords(values[0], values[1]);
+      motorR->setSpeedFromCoords(values[0], values[1]);
     } else if (!strcmp(msgType, "lights")) {
       if (strcmp(keys[0], "state") || values[0] < LED_OFF || values[0] > LED_AUTO) {
         // Key is not "state" or the value was not set/invalid
@@ -94,6 +101,13 @@ void loop() {
       }
       
       headlights.setState(values[0]);
+    } else if (!strcmp(msgType, "mode")) {
+      if (strcmp(keys[0], "mode") || values[0] < STD_MODE || values[0] > TEST_MODE) {
+        Serial.println("'mode' command is invalid");
+        return;
+      }
+
+      changeMode(values[0]);
     }
   }
 }
@@ -178,6 +192,25 @@ int readAndParseInput(char msgType[], char keys[][TYPE_MAX], int values[]) {
   }
   
   return RC_OK;
+}
+
+void changeMode(int mode) {
+  switch(mode) {
+    case STD_MODE:
+      Serial.println("Changed motors to motor");
+      motorL = &baseMotorL;
+      motorR = &baseMotorR;
+      break;
+    case TEST_MODE:
+      Serial.println("Changed motors to stub");
+      motorL = &stubMotorL;
+      motorR = &stubMotorR;
+      break;
+    default:
+      Serial.print("Invalid mode: ");
+      Serial.println(mode);
+      break;
+  }
 }
 
 // Timer compare interrupt service routine
