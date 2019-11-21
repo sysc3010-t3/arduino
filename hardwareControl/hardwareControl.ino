@@ -1,4 +1,5 @@
 #include "motor.h"
+#include "motorTest.h"
 #include "headlights.h"
 #include "ldr.h"
 
@@ -14,10 +15,10 @@
 #define LDR_2 2
  
 // functional connections
-#define MOTOR_L_PWM HG7881_A_IA // Left Motor PWM Speed
-#define MOTOR_L_DIR HG7881_A_IB // Left Motor A Direction
-#define MOTOR_R_PWM HG7881_B_IA // Left Motor B PWM Speed
-#define MOTOR_R_DIR HG7881_B_IB // Left Motor B Direction
+#define MOTOR_R_PWM HG7881_A_IA // Right Motor PWM Speed
+#define MOTOR_R_DIR HG7881_A_IB // Right Motor A Direction
+#define MOTOR_L_PWM HG7881_B_IA // Left Motor B PWM Speed
+#define MOTOR_L_DIR HG7881_B_IB // Left Motor B Direction
 
 // Serial input constants
 #define INPUT_MAX 256
@@ -29,6 +30,7 @@
 
 #define STD_MODE 0
 #define TEST_MODE 1
+#define STUB_MODE 2
 
 // Define global variables
 StubMotor stubMotorL = StubMotor(MOTOR_L_PWM, MOTOR_L_DIR, MOTOR_L);
@@ -37,8 +39,12 @@ Motor baseMotorL = Motor(MOTOR_L_PWM, MOTOR_L_DIR, MOTOR_L);
 Motor baseMotorR = Motor(MOTOR_R_PWM, MOTOR_R_DIR, MOTOR_R);
 Motor *motorL = &baseMotorL;
 Motor *motorR = &baseMotorR;
+MotorTest motorTest = MotorTest(baseMotorL, baseMotorR);
 LDR ldr = LDR(LDR_0, LDR_1, LDR_2);
-Headlights headlights = Headlights(LEFT_LED, RIGHT_LED);
+Headlights headlights = Headlights(LEFT_LED, RIGHT_LED, ldr);
+
+int mode = STD_MODE;
+int testIdx = 0;
 
 void setup() {
   pinMode(MOTOR_L_PWM, OUTPUT);
@@ -71,6 +77,20 @@ void setup() {
 }
 
 void loop() {
+  switch(mode) {
+    case STD_MODE:
+    case STUB_MODE:
+      checkCommand();
+      break;
+    case TEST_MODE:
+      if (!checkCommand()) {
+        motorTest.runNextTest();
+      }
+      break;
+  }
+}
+
+int checkCommand() {
   if (Serial.available() > 0) {
     // Define variables to store inputs
     char msgType[TYPE_MAX] = {0};
@@ -80,7 +100,7 @@ void loop() {
     if (readAndParseInput(msgType, keys, values)) {
       // Error while trying to parse input
       Serial.println("Invalid input");
-      return;
+      return 0;
     }
 
     if (!strcmp(msgType, "move")) {
@@ -88,7 +108,7 @@ void loop() {
           values[0] == -1 || values[1] == -1) {
         // Second key not set, keys are not "xaxis" and "yaxis" in that order, or values are not both set
         Serial.println("'move' command is invalid");
-        return;
+        return 0;
       }
 
       motorL->setSpeedFromCoords(values[0], values[1]);
@@ -97,19 +117,23 @@ void loop() {
       if (strcmp(keys[0], "state") || values[0] < LED_OFF || values[0] > LED_AUTO) {
         // Key is not "state" or the value was not set/invalid
         Serial.println("'lights' command is invalid");
-        return;
+        return 0;
       }
       
       headlights.setState(values[0]);
     } else if (!strcmp(msgType, "mode")) {
-      if (strcmp(keys[0], "mode") || values[0] < STD_MODE || values[0] > TEST_MODE) {
+      if (strcmp(keys[0], "mode") || values[0] < STD_MODE || values[0] > STUB_MODE) {
         Serial.println("'mode' command is invalid");
-        return;
+        return 0;
       }
 
       changeMode(values[0]);
     }
+    
+    return 1;
   }
+
+  return 0;
 }
 
 // Read the available Serial input and parse it according to the expected format:
@@ -194,27 +218,33 @@ int readAndParseInput(char msgType[], char keys[][TYPE_MAX], int values[]) {
   return RC_OK;
 }
 
-void changeMode(int mode) {
-  switch(mode) {
-    case STD_MODE:
-      Serial.println("Changed motors to motor");
-      motorL = &baseMotorL;
-      motorR = &baseMotorR;
-      break;
-    case TEST_MODE:
-      Serial.println("Changed motors to stub");
-      motorL = &stubMotorL;
-      motorR = &stubMotorR;
-      break;
-    default:
-      Serial.print("Invalid mode: ");
-      Serial.println(mode);
-      break;
+void changeMode(int newMode) {
+  if (newMode != mode) {
+    noInterrupts();
+    switch(newMode) {
+      case TEST_MODE:
+      case STD_MODE:
+        motorL = &baseMotorL;
+        motorR = &baseMotorR;
+        break;
+      case STUB_MODE:
+        motorL = &stubMotorL;
+        motorR = &stubMotorR;
+        break;
+      default:
+        Serial.print("Invalid mode: ");
+        Serial.println(mode);
+        return;
+    }
+
+    Serial.println("Changed mode");
+    mode = newMode;
+    interrupts();
   }
 }
 
 // Timer compare interrupt service routine
 ISR(TIMER1_COMPA_vect)
 {
-  headlights.autoSet(ldr);
+  headlights.autoSet();
 }

@@ -7,8 +7,10 @@
 #define MOTOR_BWD 0
 #define MOTOR_FWD 1
 #define FWD_MAX 0
+#define FWD_SLOW 120
 #define FWD_STOP 255
 #define BWD_MAX 255
+#define BWD_SLOW 135
 #define BWD_STOP 0
 
 // Represents a connected motor.

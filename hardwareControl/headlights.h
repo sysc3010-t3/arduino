@@ -12,13 +12,14 @@ class Headlights {
   int ledL;
   int ledR;
   int state;
+  LDR ldr;
 
   public:
     // Initializes headlights with the output pins and an LDR object
-    Headlights(int leftPin, int rightPin);
+    Headlights(int leftPin, int rightPin, LDR& ldrArg);
 
     // Gets the brightness reading from the LDR and set the LEDs accordingly
-    void autoSet(LDR& ldr);
+    void autoSet();
 
     // Sets the state of the Headlights object and sets the LEDs accordingly
     void setState(int stateArg);

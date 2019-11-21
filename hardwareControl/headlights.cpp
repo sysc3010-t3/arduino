@@ -2,14 +2,13 @@
 #include "ldr.h"
 
 // Initializes headlights with the output pins and an LDR object
-Headlights::Headlights(int leftPin, int rightPin) {
-  ledL = leftPin;
-  ledR = rightPin;
+Headlights::Headlights(int leftPin, int rightPin, LDR& ldrArg):
+ledL(leftPin), ledR(rightPin), ldr(ldrArg) {
   state = LED_AUTO; // set to auto by default
 }
 
 // Gets the brightness reading from the LDR and set the LEDs accordingly
-void Headlights::autoSet(LDR& ldr) {
+void Headlights::autoSet() {
   int brightness = ldr.getBrightness();
   if (brightness < 800) {
     setLEDs(LED_ON);
