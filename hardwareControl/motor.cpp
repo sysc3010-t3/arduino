@@ -14,13 +14,13 @@ Motor::Motor(int pwmPinArg, int dirPinArg, char idArg) {
 // Calculates the speed and direction from the given joystick coordinates
 // and outputs them to the PWM and DIR pins.
 void Motor::setSpeedFromCoords(int xAxis, int yAxis) {
+  dir = MOTOR_FWD;
   // Y-axis used for forward and backward control
   if (yAxis < 470) {
     dir = MOTOR_BWD;
     // Convert the declining Y-axis readings for going backward from 470 to 0 into 0 to 255 value for the PWM signal for increasing the motor speed
     motorSpeed = map(yAxis, 470, 0, 0, 255);
   } else if (yAxis > 550) {
-    dir = MOTOR_FWD;
     // Convert the increasing Y-axis readings for going forward from 550 to 1023 into 0 to 255 value for the PWM signal for increasing the motor speed
     motorSpeed = map(yAxis, 550, 1023, 0, 255);
   } else {

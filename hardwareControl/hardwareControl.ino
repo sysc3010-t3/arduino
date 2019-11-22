@@ -237,7 +237,6 @@ void changeMode(int newMode) {
         return;
     }
 
-    Serial.println("Changed mode");
     mode = newMode;
     interrupts();
   }
