@@ -84,7 +84,9 @@ void loop() {
       break;
     case TEST_MODE:
       if (!checkCommand()) {
-        motorTest.runNextTest();
+        if (motorTest.runNextTest()) {
+          changeMode(STD_MODE);
+        }
       }
       break;
   }

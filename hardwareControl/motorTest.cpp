@@ -6,14 +6,15 @@ MotorTest::MotorTest(Motor& motorLArg, Motor& motorRArg):
 motorL(motorLArg), motorR(motorRArg) {
 }
 
-void MotorTest::runNextTest() {
+int MotorTest::runNextTest() {
   if (currIdx >= NUM_OF_TESTS) {
-    Serial.println("All tests completed. Restarting from first test.");
-    currIdx = 0;
+    Serial.println("All tests completed.");
+    return 1;
   }
 
   Serial.print("Setting up ");
   Serial.println(testNames[currIdx]);
+  Serial.flush();
 
   // Stop motors
   motorL.setDirection(MOTOR_FWD);
@@ -41,6 +42,13 @@ void MotorTest::runNextTest() {
   delay(500);
   motorL.setMotorSpeed(FWD_STOP);
   motorR.setMotorSpeed(FWD_STOP);
+
+  if (currIdx >= NUM_OF_TESTS) {
+    Serial.println("All tests completed.");
+    return 1;
+  }
+
+  return 0;
 }
 
 void MotorTest::reset() {

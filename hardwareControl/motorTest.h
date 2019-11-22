@@ -49,7 +49,7 @@ class MotorTest {
 
   public:
     MotorTest(Motor& motorLArg, Motor& motorRArg);
-    void runNextTest();
+    int runNextTest();
     void reset();
 
   private:
