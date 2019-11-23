@@ -52,6 +52,9 @@ void setup() {
   pinMode(MOTOR_R_PWM, OUTPUT);
   pinMode(MOTOR_R_DIR, OUTPUT);
 
+  pinMode(LEFT_LED, OUTPUT);
+  pinMode(RIGHT_LED, OUTPUT);
+
   // Set up timer interrupt
   // Disable all interrupts
   noInterrupts();
