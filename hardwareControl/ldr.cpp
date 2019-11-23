@@ -2,10 +2,8 @@
 
 #include "ldr.h"
 
-LDR::LDR(int pin0, int pin1, int pin2) {
+LDR::LDR(int pin0) {
   pins[0] = pin0;
-  pins[1] = pin1;
-  pins[2] = pin2;
 }
 
 int LDR::getBrightness() {

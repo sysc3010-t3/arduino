@@ -1,6 +1,8 @@
 #include "headlights.h"
 #include "ldr.h"
 
+#define LIGHT_THRESHOLD 500
+
 // Initializes headlights with the output pins and an LDR object
 Headlights::Headlights(int leftPin, int rightPin, LDR& ldrArg):
 ledL(leftPin), ledR(rightPin), ldr(ldrArg) {
@@ -10,7 +12,7 @@ ledL(leftPin), ledR(rightPin), ldr(ldrArg) {
 // Gets the brightness reading from the LDR and set the LEDs accordingly
 void Headlights::autoSet() {
   int brightness = ldr.getBrightness();
-  if (brightness < 800) {
+  if (brightness < LIGHT_THRESHOLD) {
     setLEDs(LED_ON);
   } else {
     setLEDs(LED_OFF);

@@ -11,8 +11,6 @@
 #define LEFT_LED 2
 #define RIGHT_LED 4
 #define LDR_0 0
-#define LDR_1 1
-#define LDR_2 2
  
 // functional connections
 #define MOTOR_R_PWM HG7881_A_IA // Right Motor PWM Speed
@@ -40,7 +38,7 @@ Motor baseMotorR = Motor(MOTOR_R_PWM, MOTOR_R_DIR, MOTOR_R);
 Motor *motorL = &baseMotorL;
 Motor *motorR = &baseMotorR;
 MotorTest motorTest = MotorTest(baseMotorL, baseMotorR);
-LDR ldr = LDR(LDR_0, LDR_1, LDR_2);
+LDR ldr = LDR(LDR_0);
 Headlights headlights = Headlights(LEFT_LED, RIGHT_LED, ldr);
 
 int mode = STD_MODE;
