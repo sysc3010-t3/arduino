@@ -20,7 +20,7 @@
 
 // Serial input constants
 #define INPUT_MIN 2
-#define INPUT_MAX 3
+#define INPUT_MAX 5
 #define VALUE_MAX 2
 
 // Message types
@@ -155,15 +155,17 @@ int checkCommand() {
 
 // Read the available Serial input and parse it according to the expected format:
 // byte 1: type
-// byte 2: first value
-// byte 3: second value
-// The max number of bytes in an input is 3.
+// byte 2: value or the high byte of x value
+// byte 3: low byte of x value
+// byte 4: high byte of y value
+// byte 5: low byte of y value
+// Input can either be 2 bytes or 5 bytes long.
 // Returns a 0 for a successful parse and a 1 to indicate a failure.
 // msgType will be set to the value of the 'type' field in the input and keys and values args
 // will be set to the keys and values of the succeeding entries.
 int readAndParseInput(int *type, int values[]) {
   byte input[INPUT_MAX];
-  byte inputSize = Serial.readBytes(input, INPUT_MAX);
+  byte inputSize = Serial.readBytesUntil('\n', input, INPUT_MAX);
 
   if (inputSize < INPUT_MIN) {
     // Not enough bytes were sent
@@ -171,12 +173,18 @@ int readAndParseInput(int *type, int values[]) {
   }
 
   *type = (int) input[0];
-  values[0] = (int) input[1];
 
-  if (inputSize == INPUT_MAX) {
-    values[1] = (int) input[2];
+  if (inputSize == INPUT_MIN) {
+    values[0] = (int) input[1];
+    return RC_OK;
+  } else if (inputSize < INPUT_MAX) {
+    // 16-bit words were not provided as inputs for the values
+    return RC_FAIL;
   }
   
+  values[0] = (int) (input[1] << 8 | input[2]);
+  values[1] = (int) (input[3] << 8 | input[4]);
+
   return RC_OK;
 }
 
