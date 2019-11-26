@@ -19,16 +19,24 @@
 #define MOTOR_L_DIR HG7881_B_IB // Left Motor B Direction
 
 // Serial input constants
-#define INPUT_MAX 256
-#define TYPE_MAX 8
+#define INPUT_MIN 2
+#define INPUT_MAX 5
 #define VALUE_MAX 2
-#define BASE_10 10
-#define RC_OK 0
-#define RC_FAIL 1
 
+// Message types
+#define MOVE 0
+#define LED 1
+#define MODE 2
+
+// Mode types
 #define STD_MODE 0
 #define TEST_MODE 1
 #define STUB_MODE 2
+
+// Return code types
+#define RC_NULL -1
+#define RC_OK 0
+#define RC_FAIL 1
 
 // Define global variables
 StubMotor stubMotorL = StubMotor(MOTOR_L_PWM, MOTOR_L_DIR, MOTOR_L);
@@ -84,143 +92,104 @@ void loop() {
       checkCommand();
       break;
     case TEST_MODE:
-      if (!checkCommand()) {
-        if (motorTest.runNextTest()) {
-          changeMode(STD_MODE);
-        }
+      int rc = checkCommand();
+      switch (rc) {
+        case RC_FAIL:
+          Serial.print(rc);
+        case RC_NULL:
+          if (motorTest.runNextTest()) {
+            // Change mode back to standard if the tests are complete
+            changeMode(STD_MODE);
+          }
+          break;
       }
-      break;
   }
 }
 
+// If there are bytes in the Serial buffer, read and parse the input.
+// The input is then handled based on the type of the message.
 int checkCommand() {
   if (Serial.available() > 0) {
     // Define variables to store inputs
-    char msgType[TYPE_MAX] = {0};
-    char keys[VALUE_MAX][TYPE_MAX] = {0};
+    int type = -1;
     int values[VALUE_MAX] = {-1};
     
-    if (readAndParseInput(msgType, keys, values)) {
+    if (readAndParseInput(&type, values) == RC_FAIL) {
       // Error while trying to parse input
-      Serial.println("Invalid input");
-      return 0;
+      return RC_FAIL;
     }
 
-    if (!strcmp(msgType, "move")) {
-      if (keys[1][0] == 0 || strcmp(keys[0], "xaxis") || strcmp(keys[1], "yaxis") ||
-          values[0] == -1 || values[1] == -1) {
-        // Second key not set, keys are not "xaxis" and "yaxis" in that order, or values are not both set
-        Serial.println("'move' command is invalid");
-        return 0;
-      }
-
-      motorL->setSpeedFromCoords(values[0], values[1]);
-      motorR->setSpeedFromCoords(values[0], values[1]);
-    } else if (!strcmp(msgType, "lights")) {
-      if (strcmp(keys[0], "state") || values[0] < LED_OFF || values[0] > LED_AUTO) {
-        // Key is not "state" or the value was not set/invalid
-        Serial.println("'lights' command is invalid");
-        return 0;
-      }
-      
-      headlights.setState(values[0]);
-    } else if (!strcmp(msgType, "mode")) {
-      if (strcmp(keys[0], "mode") || values[0] < STD_MODE || values[0] > STUB_MODE) {
-        Serial.println("'mode' command is invalid");
-        return 0;
-      }
-
-      changeMode(values[0]);
+    switch (type) {
+      case MOVE:
+        if (values[0] == -1 || values[1] == -1) {
+          // x and y values were not provided
+          return RC_FAIL;
+        }
+  
+        motorL->setSpeedFromCoords(values[0], values[1]);
+        motorR->setSpeedFromCoords(values[0], values[1]);
+        break;
+      case LED:
+        if (values[0] < LED_OFF || values[0] > LED_AUTO) {
+          // Value was not set/invalid
+          return RC_FAIL;
+        }
+        headlights.setState(values[0]);
+        break;
+      case MODE:
+        if (values[0] < STD_MODE || values[0] > STUB_MODE) {
+          // Value was not set/invalid
+          return RC_FAIL;
+        }
+        changeMode(values[0]);
+        break;
+      default:
+        // Invalid type was given
+        return RC_FAIL;
     }
-    
-    return 1;
+
+    return RC_OK;
   }
 
-  return 0;
+  return RC_NULL;
 }
 
 // Read the available Serial input and parse it according to the expected format:
-// key:value,key:value,...
-// The max number of entries in an input is 3.
+// byte 1: type
+// byte 2: value or the high byte of x value
+// byte 3: low byte of x value
+// byte 4: high byte of y value
+// byte 5: low byte of y value
+// Input can either be 2 bytes or 5 bytes long.
 // Returns a 0 for a successful parse and a 1 to indicate a failure.
 // msgType will be set to the value of the 'type' field in the input and keys and values args
 // will be set to the keys and values of the succeeding entries.
-int readAndParseInput(char msgType[], char keys[][TYPE_MAX], int values[]) {
-  char input[INPUT_MAX];
-  byte size = Serial.readBytesUntil('\n', input, INPUT_MAX);
-  input[size] = 0;
+int readAndParseInput(int *type, int values[]) {
+  byte input[INPUT_MAX];
+  byte inputSize = Serial.readBytesUntil('\n', input, INPUT_MAX);
 
-  // Initialize temporary values
-  char tmpType[TYPE_MAX] = {0};
-  char tmpKeys[VALUE_MAX][TYPE_MAX] = {0};
-  int tmpValues[VALUE_MAX] = {0};
-  
-  int valIdx = 0; // current index of `values` array
-  
-  // Get the section of characters before the first ':' character (i.e. the key)
-  char* strtokIdx = strtok(input, ":");
-  while (strtokIdx != NULL) { // While characters are available
-    if (valIdx >= VALUE_MAX) {
-      // Exceeded max number of values
-      return RC_FAIL;
-    }
-
-    // Store the key in a variable
-    char key[8] = {0};
-    strcpy(key, strtokIdx);
-
-    // Get the characters from, but excluding, the ':' character until the next ',' character
-    strtokIdx = strtok(NULL, ",");
-    if (strtokIdx == NULL) {
-      // No characters were available
-      return RC_FAIL;
-    }
-
-    // Store the value in a variable
-    char value[8] = {0};
-    strcpy(value, strtokIdx);
-
-    if (!strcmp(key, "type")) {
-      // This entry was the message type, so copy it to the msgType argument
-      strcpy(tmpType, value);
-    } else {
-      // This entry was a value
-      
-      // Confirm the value is a valid integer
-      char* endPtr;
-      long int longIntVal = strtol(value, &endPtr, BASE_10);
-      if (*endPtr || (longIntVal < 0 || longIntVal > 1023)) {
-        // Value is not a valid integer or is out of bounds
-        return RC_FAIL;
-      }
-
-      strcpy(tmpKeys[valIdx], key);
-      
-      // Casting longIntVal to int will be okay since the range of expected values is [0,1023]
-      // so the value won't be cut off
-      tmpValues[valIdx++] = (int) longIntVal;
-    }
-
-    // Get the characters from, but excluding, the ',' character until the next ':' character
-    // i.e. get the next key
-    strtokIdx = strtok(NULL, ":");
-  }
-
-  if (tmpType[0] == 0 || tmpKeys[0][0] == 0) {
-    // Type or first key was not set, so there was an error in the input
+  if (inputSize < INPUT_MIN) {
+    // Not enough bytes were sent
     return RC_FAIL;
   }
 
-  // Set arguments to temporary values
-  strcpy(msgType, tmpType);
-  for (int i = 0; i < valIdx; i++) {
-    strcpy(keys[i], tmpKeys[i]);
-    values[i] = tmpValues[i];
+  *type = (int) input[0];
+
+  if (inputSize == INPUT_MIN) {
+    values[0] = (int) input[1];
+    return RC_OK;
+  } else if (inputSize < INPUT_MAX) {
+    // 16-bit words were not provided as inputs for the values
+    return RC_FAIL;
   }
   
+  values[0] = (int) (input[1] << 8 | input[2]);
+  values[1] = (int) (input[3] << 8 | input[4]);
+
   return RC_OK;
 }
 
+// Change the mode of operation
 void changeMode(int newMode) {
   if (newMode != mode) {
     noInterrupts();
