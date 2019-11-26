@@ -131,13 +131,14 @@ int checkCommand() {
         break;
       case LED:
         if (values[0] < LED_OFF || values[0] > LED_AUTO) {
-          // Key is not "state" or the value was not set/invalid
+          // Value was not set/invalid
           return RC_FAIL;
         }
         headlights.setState(values[0]);
         break;
       case MODE:
         if (values[0] < STD_MODE || values[0] > STUB_MODE) {
+          // Value was not set/invalid
           return RC_FAIL;
         }
         changeMode(values[0]);
