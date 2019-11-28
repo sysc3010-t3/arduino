@@ -128,6 +128,10 @@ int checkCommand() {
   
         motorL->setSpeedFromCoords(values[0], values[1]);
         motorR->setSpeedFromCoords(values[0], values[1]);
+        motorL->writeDirection();
+        motorL->writeMotorSpeed();
+        motorR->writeDirection();
+        motorR->writeMotorSpeed();
         break;
       case LED:
         if (values[0] < LED_OFF || values[0] > LED_AUTO) {

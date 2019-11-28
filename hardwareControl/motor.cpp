@@ -16,63 +16,55 @@ Motor::Motor(int pwmPinArg, int dirPinArg, char idArg) {
 void Motor::setSpeedFromCoords(int xAxis, int yAxis) {
   dir = MOTOR_FWD;
   // Y-axis used for forward and backward control
-  if (yAxis < 470) {
+  if (yAxis < COORD_LOW) {
     dir = MOTOR_BWD;
     // Convert the declining Y-axis readings for going backward from 470 to 0 into 0 to 255 value for the PWM signal for increasing the motor speed
-    motorSpeed = map(yAxis, 470, 0, 0, 255);
-  } else if (yAxis > 550) {
+    motorSpeed = map(yAxis, COORD_LOW, COORD_MIN, BWD_SLOW, BWD_MAX);
+  } else if (yAxis > COORD_HIGH) {
     // Convert the increasing Y-axis readings for going forward from 550 to 1023 into 0 to 255 value for the PWM signal for increasing the motor speed
-    motorSpeed = map(yAxis, 550, 1023, 0, 255);
+    motorSpeed = map(yAxis, COORD_HIGH, COORD_MAX, BWD_SLOW, BWD_MAX);
   } else {
     // If joystick stays in middle the motors are not moving
-    motorSpeed = 0;
+    motorSpeed = BWD_STOP;
   }
   
   // X-axis used for left and right control
-  if (xAxis < 470) {
+  if (xAxis < COORD_LOW) {
     // Convert the declining X-axis readings from 470 to 0 into increasing 0 to 255 value
-    int xMapped = map(xAxis, 470, 0, 0, 255);
+    int xMapped = map(xAxis, COORD_LOW, COORD_MIN, BWD_SLOW, BWD_MAX);
     // Move to left - decrease left motor speed, increase right motor speed
     if (id == MOTOR_L) {
       motorSpeed = motorSpeed - xMapped;
-      if (motorSpeed < 0) {
-        motorSpeed = 0;
+      if (motorSpeed < BWD_STOP) {
+        motorSpeed = BWD_STOP;
       }
     } else if (id == MOTOR_R) {
       motorSpeed = motorSpeed + xMapped;
-      if (motorSpeed > 255) {
-        motorSpeed = 255;
+      if (motorSpeed > BWD_MAX) {
+        motorSpeed = BWD_MAX;
       }
     }
-  } else if (xAxis > 550) {
+  } else if (xAxis > COORD_HIGH) {
     // Convert the increasing X-axis readings from 550 to 1023 into 0 to 255 value
-    int xMapped = map(xAxis, 550, 1023, 0, 255);
+    int xMapped = map(xAxis, COORD_HIGH, COORD_MAX, BWD_SLOW, BWD_MAX);
     // Move right - decrease right motor speed, increase left motor speed
     if (id == MOTOR_R) {
       motorSpeed = motorSpeed - xMapped;
-      if (motorSpeed < 0) {
-        motorSpeed = 0;
+      if (motorSpeed < BWD_STOP) {
+        motorSpeed = BWD_STOP;
       }
     } else if (id == MOTOR_L) {
       motorSpeed = motorSpeed + xMapped;
-      if (motorSpeed > 255) {
-        motorSpeed = 255;
+      if (motorSpeed > BWD_MAX) {
+        motorSpeed = BWD_MAX;
       }
     }
-  }
-  
-  // Prevent buzzing at low speeds
-  if (motorSpeed < 120) {
-    motorSpeed = 0;
   }
 
   if (dir) {
     // Forward speed is inverted so speed increases from 255 to 0
-    motorSpeed = 255 - motorSpeed;
+    motorSpeed = BWD_MAX - motorSpeed;
   }
-
-  writeDirection();
-  writeMotorSpeed();
 }
 
 // Sets the direction of the motor
