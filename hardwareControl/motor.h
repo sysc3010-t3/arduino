@@ -13,6 +13,11 @@
 #define BWD_SLOW 135
 #define BWD_STOP 0
 
+#define COORD_MIN 0
+#define COORD_LOW 470
+#define COORD_HIGH 550
+#define COORD_MAX 1023
+
 // Represents a connected motor.
 // Can set the direction and speed of the motor.
 class Motor {
@@ -35,7 +40,6 @@ class Motor {
     // Sets the speed of the motor
     void setMotorSpeed(int motorSpeedArg);
 
-  protected:
     // Write the dir attribute to the DIR pin
     virtual void writeDirection();
 
@@ -47,7 +51,6 @@ class StubMotor: public Motor {
   public:
     StubMotor(int pwmPinArg, int dirPinArg, char idArg);
 
-  private:
     // Write the dir attribute to the DIR pin
     void writeDirection();
 
