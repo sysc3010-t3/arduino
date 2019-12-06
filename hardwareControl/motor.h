@@ -17,6 +17,7 @@
 #define COORD_LOW 470
 #define COORD_HIGH 550
 #define COORD_MAX 1023
+#define X_OFFSET_MAX 100
 
 // Represents a connected motor.
 // Can set the direction and speed of the motor.

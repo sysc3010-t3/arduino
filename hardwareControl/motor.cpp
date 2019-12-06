@@ -31,7 +31,7 @@ void Motor::setSpeedFromCoords(int xAxis, int yAxis) {
   // X-axis used for left and right control
   if (xAxis < COORD_LOW) {
     // Convert the declining X-axis readings from 470 to 0 into increasing 0 to 255 value
-    int xMapped = map(xAxis, COORD_LOW, COORD_MIN, BWD_SLOW, BWD_MAX);
+    int xMapped = map(xAxis, COORD_LOW, COORD_MIN, 0, X_OFFSET_MAX);
     // Move to left - decrease left motor speed, increase right motor speed
     if (id == MOTOR_L) {
       motorSpeed = motorSpeed - xMapped;
@@ -46,7 +46,7 @@ void Motor::setSpeedFromCoords(int xAxis, int yAxis) {
     }
   } else if (xAxis > COORD_HIGH) {
     // Convert the increasing X-axis readings from 550 to 1023 into 0 to 255 value
-    int xMapped = map(xAxis, COORD_HIGH, COORD_MAX, BWD_SLOW, BWD_MAX);
+    int xMapped = map(xAxis, COORD_HIGH, COORD_MAX, 0, X_OFFSET_MAX);
     // Move right - decrease right motor speed, increase left motor speed
     if (id == MOTOR_R) {
       motorSpeed = motorSpeed - xMapped;
