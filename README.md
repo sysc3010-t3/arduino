@@ -15,7 +15,7 @@ LEDs.
     [here](https://www.arduino.cc/en/main/software).  
 2. Run the Arduino Software IDE and open `hardwareControl/hardwareControl.ino`
 within the application.  
-3. Compile and load the code on the Arduino.
+3. Compile and load the code on the Arduino.  
     a) Connect the Arduino to the computer running the application via the USB
     cable provided in the kit.  
     b) Press the "upload" button (to the right of the checkmark button) in the
